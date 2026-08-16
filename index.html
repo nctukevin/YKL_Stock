@@ -13,7 +13,7 @@
 
     <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
         <div class="max-w-md mx-auto flex justify-between items-center">
-            <h1 class="text-lg font-bold">📈 股票記帳簿 (v16)</h1>
+            <h1 class="text-lg font-bold">📈 股票記帳簿 (v16 完整版)</h1>
             <div class="space-x-2 text-sm">
                 <button onclick="exportData()" class="bg-blue-700 px-2.5 py-1 rounded hover:bg-blue-800 transition">備份</button>
                 <label class="bg-blue-700 px-2.5 py-1 rounded cursor-pointer hover:bg-blue-800 transition">
@@ -61,7 +61,6 @@
     <script>
         let trades = JSON.parse(localStorage.getItem('stock_trades_v16')) || [];
         let closingPrices = JSON.parse(localStorage.getItem('stock_closing_prices')) || {};
-        const FEE_RATE = 0.001425;
         document.getElementById('tradeDate').valueAsDate = new Date();
 
         function toggleFormMode() {
@@ -78,23 +77,17 @@
 
         function addTrade(e) {
             e.preventDefault();
-            const actualShares = parseFloat(document.getElementById('shares').value) * 1000;
-            const price = parseFloat(document.getElementById('price').value);
-            const type = document.getElementById('tradeType').value;
-            const stockName = document.getElementById('stockName').value.trim();
-            const totalAmount = actualShares * price;
-            
+            const inputShares = parseFloat(document.getElementById('shares').value);
             trades.push({
                 id: Date.now(),
-                stockName,
-                type,
+                stockName: document.getElementById('stockName').value.trim(),
+                assetType: document.getElementById('assetType').value,
+                type: document.getElementById('tradeType').value,
                 date: document.getElementById('tradeDate').value,
-                shares: actualShares,
-                inputShares: actualShares / 1000,
-                price,
-                fee: (type === 'BUY' || type === 'SELL') ? totalAmount * FEE_RATE : 0,
-                tax: (type === 'SELL') ? totalAmount * (document.getElementById('assetType').value === 'ETF' ? 0.001 : 0.003) : 0,
-                dividendTotal: (type === 'DIVIDEND') ? totalAmount : 0
+                shares: inputShares * 1000,
+                inputShares: inputShares,
+                price: parseFloat(document.getElementById('price').value),
+                dividendTotal: (document.getElementById('tradeType').value === 'DIVIDEND') ? (inputShares * 1000 * parseFloat(document.getElementById('price').value)) : 0
             });
             saveData();
             document.getElementById('tradeForm').reset();
@@ -105,12 +98,21 @@
             saveData();
         }
 
+        function deleteTrade(id) {
+            if(confirm('確定刪除？')) { trades = trades.filter(t => t.id !== id); saveData(); }
+        }
+
         function exportData() {
-            const blob = new Blob([JSON.stringify({trades, closingPrices})], {type: "application/json"});
+            const data = { trades, closingPrices };
+            const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
+            a.href = url;
             a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function importData(e) {
@@ -120,6 +122,7 @@
                 trades = data.trades;
                 closingPrices = data.closingPrices;
                 saveData();
+                alert('還原成功');
             };
             reader.readAsText(e.target.files[0]);
         }
@@ -132,35 +135,29 @@
             
             let stockMap = {};
             trades.forEach(t => {
-                if (!stockMap[t.stockName]) stockMap[t.stockName] = { totalShares: 0, buyRecords: [], totalDividend: 0, dividendHistory: [] };
-                let s = stockMap[t.stockName];
-                if (t.type === 'BUY') {
-                    s.totalShares += t.shares;
-                    s.buyRecords.push({ shares: t.shares, price: t.price, fee: t.fee });
-                } else if (t.type === 'SELL') {
-                    s.totalShares -= t.shares;
-                    s.buyRecords.shift(); // 簡易 FIFO
-                } else if (t.type === 'DIVIDEND') {
-                    s.totalDividend += t.dividendTotal;
-                    s.dividendHistory.push({ date: t.date, amount: t.dividendTotal, perShare: t.price, shares: t.inputShares });
+                if(!stockMap[t.stockName]) stockMap[t.stockName] = { totalShares:0, totalDividend:0, dividendHistory:[] };
+                if(t.type==='BUY') stockMap[t.stockName].totalShares += t.shares;
+                if(t.type==='SELL') stockMap[t.stockName].totalShares -= t.shares;
+                if(t.type==='DIVIDEND') {
+                    stockMap[t.stockName].totalDividend += t.dividendTotal;
+                    stockMap[t.stockName].dividendHistory.push(t);
                 }
             });
 
-            // 渲染持股 (僅顯示 totalShares > 0)
-            for (let [name, data] of Object.entries(stockMap)) {
-                if (data.totalShares > 0) {
-                    let divItems = data.dividendHistory.map(d => `<div class="flex justify-between text-xs text-gray-600"><span>${d.date} (${d.shares}張)</span><span>+$${Math.round(d.amount)}</span></div>`).join('');
-                    let divHTML = data.dividendHistory.length > 0 ? `<div class="mt-2 pt-2 border-t text-xs">配息明細:${divItems}<div class="font-bold text-yellow-700">累計: +$${Math.round(data.totalDividend)}</div></div>` : '';
-                    
+            for(let [name, data] of Object.entries(stockMap)) {
+                if(data.totalShares > 0) {
+                    let divHTML = data.dividendHistory.map(d => `<div class="flex justify-between text-xs text-gray-600 border-l-2 border-yellow-300 pl-2"><span>${d.date} (${d.inputShares}張)</span><span>+$${Math.round(d.dividendTotal)}</span></div>`).join('');
                     let card = document.createElement('div');
-                    card.className = 'p-4 rounded-xl bg-white border border-gray-200 text-sm shadow-sm';
-                    card.innerHTML = `<div class="font-bold text-base border-b pb-2 mb-2">${name} (持有: ${data.totalShares/1000} 張)</div>
-                                      <div class="flex justify-between">收盤價:<input type="number" value="${closingPrices[name]||''}" onchange="updateClosingPrice('${name}', this.value)" class="w-20 border text-right"></div>
-                                      ${divHTML}`;
+                    card.className = 'p-4 rounded-xl bg-white border shadow-sm';
+                    card.innerHTML = `<div class="font-bold border-b mb-2">${name} (持有: ${data.totalShares/1000} 張)</div>
+                                      <div class="flex justify-between text-sm">收盤價:<input type="number" value="${closingPrices[name]||''}" onchange="updateClosingPrice('${name}', this.value)" class="w-20 border text-right"></div>
+                                      <div class="mt-2 text-xs">配息明細:${divHTML}<div class="font-bold text-yellow-700 mt-1">累計: +$${Math.round(data.totalDividend)}</div></div>`;
                     holdingSummary.appendChild(card);
                 }
             }
-            // 簡化歷史渲染...
+            [...trades].reverse().forEach(t => {
+                tradeList.innerHTML += `<div class="p-2 bg-white border rounded text-xs flex justify-between">${t.date} | ${t.stockName} | ${t.type} | ${t.inputShares}張 <button onclick="deleteTrade(${t.id})" class="text-red-500">刪除</button></div>`;
+            });
         }
         render();
     </script>
