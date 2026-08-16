@@ -5,42 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票與 ETF 記帳簿</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- PWA 手機桌面 App 設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="股票記帳">
     <meta name="theme-color" content="#2563eb">
-    
-    <!-- 動態生成 Manifest 讓手機辨識為 App -->
-    <script>
-        const manifestData = {
-            "name": "股票與 ETF 記帳簿",
-            "short_name": "股票記帳",
-            "start_url": "./",
-            "display": "standalone",
-            "background_color": "#f9fafb",
-            "theme_color": "#2563eb",
-            "icons": [
-                {
-                    "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%%3e%3ctext y=%22.9em%22 font-size=%2290%22>📈</text>",
-                    "sizes": "192x192",
-                    "type": "image/svg+xml"
-                }
-            ]
-        };
-        const stringManifest = JSON.stringify(manifestData);
-        const blob = new Blob([stringManifest], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(blob);
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = manifestURL;
-        document.head.appendChild(link);
-    </script>
 </head>
 <body class="bg-gray-50 text-gray-800 pb-12">
 
-    <!-- 頂部標題 -->
     <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
         <div class="max-w-md mx-auto flex justify-between items-center">
             <h1 class="text-lg font-bold">📈 股票記帳簿 (v16)</h1>
@@ -54,170 +24,50 @@
     </header>
 
     <main class="max-w-md mx-auto p-4 space-y-6">
-
-        <!-- 總覽卡片 -->
+        <!-- 總覽 -->
         <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
             <div class="grid grid-cols-2 gap-3 text-center">
-                <div class="bg-blue-50 p-3 rounded-lg">
-                    <p class="text-xs text-gray-500">歷史累計已實現損益</p>
-                    <p id="totalRealizedPnl" class="text-lg font-bold text-gray-800">$0</p>
-                </div>
-                <div class="bg-yellow-50 p-3 rounded-lg">
-                    <p class="text-xs text-gray-500">歷史累計配息</p>
-                    <p id="totalDividend" class="text-lg font-bold text-yellow-600">$0</p>
-                </div>
+                <div class="bg-blue-50 p-3 rounded-lg"><p class="text-xs text-gray-500">歷史累計已實現損益</p><p id="totalRealizedPnl" class="text-lg font-bold text-gray-800">$0</p></div>
+                <div class="bg-yellow-50 p-3 rounded-lg"><p class="text-xs text-gray-500">歷史累計配息</p><p id="totalDividend" class="text-lg font-bold text-yellow-600">$0</p></div>
             </div>
             <div class="grid grid-cols-2 gap-3 text-center">
-                <div class="bg-teal-50 p-3 rounded-lg flex flex-col justify-center">
-                    <p class="text-xs text-gray-500">現有持股總市值</p>
-                    <p id="totalMarketValueAll" class="text-base font-bold text-teal-700">$0</p>
-                </div>
-                <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center">
-                    <p class="text-xs text-gray-500">整體總報酬率</p>
-                    <p id="totalRoi" class="text-lg font-bold text-emerald-600">0.00%</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3 text-center">
-                <div class="bg-purple-50 p-3 rounded-lg flex flex-col justify-center">
-                    <p class="text-xs text-gray-500">現有庫存原始總投入</p>
-                    <p id="totalGrossCostAll" class="text-base font-bold text-purple-700">$0</p>
-                </div>
-                <div class="bg-indigo-50 p-3 rounded-lg flex flex-col justify-center">
-                    <p class="text-xs text-gray-500">持股總淨成本 (扣配息)</p>
-                    <p id="totalNetCostAll" class="text-base font-bold text-indigo-700">$0</p>
-                </div>
+                <div class="bg-teal-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-gray-500">現有持股總市值</p><p id="totalMarketValueAll" class="text-base font-bold text-teal-700">$0</p></div>
+                <div class="bg-emerald-50 p-3 rounded-lg flex flex-col justify-center"><p class="text-xs text-gray-500">整體總報酬率</p><p id="totalRoi" class="text-lg font-bold text-emerald-600">0.00%</p></div>
             </div>
         </section>
 
-        <!-- 區間收益統計面板 -->
-        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
-            <h2 class="text-md font-semibold text-blue-600">📊 自訂區間收益統計</h2>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                    <label class="text-gray-500">開始日期</label>
-                    <input type="date" id="startDate" onchange="render()" class="w-full border rounded p-1.5 bg-white">
-                </div>
-                <div>
-                    <label class="text-gray-500">結束日期</label>
-                    <input type="date" id="endDate" onchange="render()" class="w-full border rounded p-1.5 bg-white">
-                </div>
-            </div>
-            <div class="flex space-x-1 pt-1">
-                <button onclick="setDateRange(1)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded text-xs">近1個月</button>
-                <button onclick="setDateRange(3)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded text-xs">近3個月</button>
-                <button onclick="setDateRange(6)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded text-xs">近半年</button>
-                <button onclick="setDateRange(12)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded text-xs">近1年</button>
-            </div>
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 grid grid-cols-3 gap-2 text-center mt-2">
-                <div>
-                    <p class="text-[10px] text-gray-500">區間已實現</p>
-                    <p id="rangePnl" class="text-sm font-bold text-gray-800">$0</p>
-                </div>
-                <div>
-                    <p class="text-[10px] text-gray-500">區間配息</p>
-                    <p id="rangeDividend" class="text-sm font-bold text-yellow-600">$0</p>
-                </div>
-                <div>
-                    <p class="text-[10px] text-gray-500">區間總收益</p>
-                    <p id="rangeTotal" class="text-sm font-bold text-emerald-600">$0</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 新增交易表單 -->
+        <!-- 表單 -->
         <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <h2 class="text-md font-semibold mb-3 text-blue-600">✍️ 新增交易或配息紀錄</h2>
+            <h2 class="text-md font-semibold mb-3 text-blue-600">✍️ 新增記錄</h2>
             <form id="tradeForm" onsubmit="addTrade(event)" class="space-y-3">
                 <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-xs text-gray-500">代號與名稱</label>
-                        <input type="text" id="stockName" required placeholder="例: 0050" class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-200 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500">商品種類</label>
-                        <select id="assetType" class="w-full border rounded p-2 text-sm bg-white focus:ring focus:ring-blue-200 focus:outline-none">
-                            <option value="ETF">ETF (稅率 0.1%)</option>
-                            <option value="STOCK">一般股票 (稅率 0.3%)</option>
-                        </select>
-                    </div>
+                    <input type="text" id="stockName" required placeholder="代號 (例: 0050)" class="w-full border rounded p-2 text-sm">
+                    <select id="assetType" class="w-full border rounded p-2 text-sm bg-white"><option value="ETF">ETF</option><option value="STOCK">一般股票</option></select>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
-                    <div>
-                        <label class="text-xs text-gray-500">類型</label>
-                        <select id="tradeType" onchange="toggleFormMode()" class="w-full border rounded p-2 text-sm bg-white focus:ring focus:ring-blue-200 focus:outline-none">
-                            <option value="BUY">買進</option>
-                            <option value="SELL">賣出</option>
-                            <option value="DIVIDEND">現金股利</option>
-                        </select>
-                    </div>
-                    <div id="sharesContainer">
-                        <label class="text-xs text-gray-500" id="sharesLabel">張數</label>
-                        <input type="number" id="shares" required min="0.001" step="any" placeholder="例: 1" class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-200 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500" id="priceLabel">單價</label>
-                        <input type="number" id="price" required step="0.01" placeholder="單價" class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-200 focus:outline-none">
-                    </div>
+                    <select id="tradeType" onchange="toggleFormMode()" class="w-full border rounded p-2 text-sm bg-white"><option value="BUY">買進</option><option value="SELL">賣出</option><option value="DIVIDEND">現金股利</option></select>
+                    <input type="number" id="shares" required min="0.001" step="any" placeholder="張數" class="w-full border rounded p-2 text-sm">
+                    <input type="number" id="price" required step="0.01" placeholder="單價/配息" class="w-full border rounded p-2 text-sm">
                 </div>
-                <div>
-                    <label class="text-xs text-gray-500">日期</label>
-                    <input type="date" id="tradeDate" required class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-200 focus:outline-none">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium text-sm hover:bg-blue-700 transition shadow-sm">儲存紀錄</button>
+                <input type="date" id="tradeDate" required class="w-full border rounded p-2 text-sm">
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700">儲存紀錄</button>
             </form>
         </section>
 
-        <!-- 目前持股彙整 -->
-        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <h2 class="text-md font-semibold mb-3 text-blue-600">📊 目前持股庫存與收盤價</h2>
-            <div id="holdingSummary" class="space-y-3"></div>
-        </section>
-
-        <!-- 歷史交易明細 -->
-        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <h2 class="text-md font-semibold mb-3 text-blue-600">📜 歷史交易與配息明細</h2>
-            <div id="tradeList" class="space-y-2 max-h-80 overflow-y-auto"></div>
-        </section>
-
+        <div id="holdingSummary" class="space-y-3"></div>
+        <div id="tradeList" class="space-y-2 max-h-80 overflow-y-auto"></div>
     </main>
 
     <script>
-        const today = new Date();
-        document.getElementById('tradeDate').valueAsDate = today;
-        
-        let endDateStr = today.toISOString().slice(0, 10);
-        let startDateObj = new Date();
-        startDateObj.setMonth(today.getMonth() - 6);
-        let startDateStr = startDateObj.toISOString().slice(0, 10);
-
-        document.getElementById('startDate').value = startDateStr;
-        document.getElementById('endDate').value = endDateStr;
-
         let trades = JSON.parse(localStorage.getItem('stock_trades_v16')) || [];
         let closingPrices = JSON.parse(localStorage.getItem('stock_closing_prices')) || {};
         const FEE_RATE = 0.001425;
-
-        function setDateRange(months) {
-            let end = new Date();
-            let start = new Date();
-            start.setMonth(end.getMonth() - months);
-            document.getElementById('startDate').value = start.toISOString().slice(0, 10);
-            document.getElementById('endDate').value = end.toISOString().slice(0, 10);
-            render();
-        }
+        document.getElementById('tradeDate').valueAsDate = new Date();
 
         function toggleFormMode() {
             const type = document.getElementById('tradeType').value;
-            const priceLabel = document.getElementById('priceLabel');
-            const sharesLabel = document.getElementById('sharesLabel');
-            
-            if (type === 'DIVIDEND') {
-                sharesLabel.innerText = "發息張數";
-                priceLabel.innerText = "每股配息($)";
-            } else {
-                sharesLabel.innerText = "張數";
-                priceLabel.innerText = "單價";
-            }
+            document.getElementById('shares').placeholder = type === 'DIVIDEND' ? "發息張數" : "張數";
+            document.getElementById('price').placeholder = type === 'DIVIDEND' ? "每股配息" : "單價";
         }
 
         function saveData() {
@@ -226,379 +76,92 @@
             render();
         }
 
-        function updateClosingPrice(stockName, price) {
-            let val = parseFloat(price);
-            if (!isNaN(val) && val > 0) {
-                closingPrices[stockName] = val;
-            } else {
-                delete closingPrices[stockName];
-            }
-            localStorage.setItem('stock_closing_prices', JSON.stringify(closingPrices));
-            render();
-        }
-
         function addTrade(e) {
             e.preventDefault();
-            const inputShares = parseFloat(document.getElementById('shares').value);
-            const actualShares = inputShares * 1000; 
+            const actualShares = parseFloat(document.getElementById('shares').value) * 1000;
             const price = parseFloat(document.getElementById('price').value);
             const type = document.getElementById('tradeType').value;
-            const assetType = document.getElementById('assetType').value;
             const stockName = document.getElementById('stockName').value.trim();
-
-            let fee = 0;
-            let tax = 0;
-            let dividendTotal = 0;
-
-            if (type === 'BUY' || type === 'SELL') {
-                const totalAmount = actualShares * price;
-                const taxRate = (assetType === 'ETF') ? 0.001 : 0.003;
-                fee = totalAmount * FEE_RATE;
-                tax = (type === 'SELL') ? (totalAmount * taxRate) : 0;
-            } else if (type === 'DIVIDEND') {
-                dividendTotal = actualShares * price;
-            }
-
-            const newTrade = {
+            const totalAmount = actualShares * price;
+            
+            trades.push({
                 id: Date.now(),
-                stockName: stockName,
-                assetType: assetType,
-                type: type,
+                stockName,
+                type,
                 date: document.getElementById('tradeDate').value,
                 shares: actualShares,
-                inputShares: inputShares,
-                price: price,
-                fee: fee,
-                tax: tax,
-                dividendTotal: dividendTotal
-            };
-
-            trades.push(newTrade);
-            trades.sort((a, b) => {
-                let dateDiff = new Date(a.date) - new Date(b.date);
-                if(dateDiff === 0) return a.id - b.id;
-                return dateDiff;
+                inputShares: actualShares / 1000,
+                price,
+                fee: (type === 'BUY' || type === 'SELL') ? totalAmount * FEE_RATE : 0,
+                tax: (type === 'SELL') ? totalAmount * (document.getElementById('assetType').value === 'ETF' ? 0.001 : 0.003) : 0,
+                dividendTotal: (type === 'DIVIDEND') ? totalAmount : 0
             });
             saveData();
             document.getElementById('tradeForm').reset();
-            document.getElementById('tradeDate').valueAsDate = new Date();
-            toggleFormMode();
         }
 
-        function deleteTrade(id) {
-            if (confirm('確定要刪除這筆紀錄嗎？')) {
-                trades = trades.filter(t => t.id !== id);
-                saveData();
-            }
-        }
-
-        function render() {
-            const tradeListEl = document.getElementById('tradeList');
-            const holdingSummaryEl = document.getElementById('holdingSummary');
-            
-            tradeListEl.innerHTML = '';
-            let stockMap = {};
-            let totalRealizedPnl = 0;
-            let totalDividendAll = 0;
-
-            let rangeStart = document.getElementById('startDate').value;
-            let rangeEnd = document.getElementById('endDate').value;
-            let rangeRealizedPnl = 0;
-            let rangeDividend = 0;
-
-            if (trades.length === 0) {
-                closingPrices = {};
-                localStorage.setItem('stock_closing_prices', JSON.stringify(closingPrices));
-
-                tradeListEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">尚無交易紀錄</p>';
-                holdingSummaryEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">尚無持股資料</p>';
-                document.getElementById('totalRealizedPnl').innerText = '$0';
-                document.getElementById('totalDividend').innerText = '$0';
-                document.getElementById('totalMarketValueAll').innerText = '$0';
-                document.getElementById('totalGrossCostAll').innerText = '$0';
-                document.getElementById('totalNetCostAll').innerText = '$0';
-                document.getElementById('totalRoi').innerText = '0.00%';
-                document.getElementById('rangePnl').innerText = '$0';
-                document.getElementById('rangeDividend').innerText = '$0';
-                document.getElementById('rangeTotal').innerText = '$0';
-                return;
-            }
-
-            trades.forEach(t => {
-                if (!stockMap[t.stockName]) {
-                    stockMap[t.stockName] = { 
-                        totalShares: 0, 
-                        buyRecords: [],
-                        totalDividend: 0,
-                        dividendHistory: []
-                    };
-                }
-                
-                let s = stockMap[t.stockName];
-                
-                if (t.type === 'BUY') {
-                    s.totalShares += t.shares;
-                    s.buyRecords.push({ shares: t.shares, price: t.price, fee: t.fee });
-                    s.buyRecords.sort((a, b) => a.price - b.price);
-                } else if (t.type === 'SELL') {
-                    let remainingToSell = t.shares;
-                    let totalCostOfSold = 0;
-                    
-                    while (remainingToSell > 0 && s.buyRecords.length > 0) {
-                        let batch = s.buyRecords[0];
-                        let take = Math.min(remainingToSell, batch.shares);
-                        let proportion = take / batch.shares;
-                        totalCostOfSold += (take * batch.price) + (batch.fee * proportion);
-                        
-                        batch.shares -= take;
-                        batch.fee -= (batch.fee * proportion);
-                        remainingToSell -= take;
-                        s.totalShares -= take;
-                        
-                        if (batch.shares === 0) s.buyRecords.shift();
-                    }
-                    
-                    let sellNet = (t.shares * t.price) - t.fee - t.tax;
-                    let pnl = sellNet - totalCostOfSold;
-                    totalRealizedPnl += pnl;
-
-                    if (rangeStart && rangeEnd && t.date >= rangeStart && t.date <= rangeEnd) {
-                        rangeRealizedPnl += pnl;
-                    }
-                    
-                    if (s.totalShares <= 0) {
-                        s.totalShares = 0;
-                        s.buyRecords = [];
-                    }
-                } else if (t.type === 'DIVIDEND') {
-                    s.totalDividend += t.dividendTotal;
-                    totalDividendAll += t.dividendTotal;
-                    let divShares = t.inputShares !== undefined ? t.inputShares : (t.shares / 1000);
-                    s.dividendHistory.push({ date: t.date, amount: t.dividendTotal, perShare: t.price, shares: divShares });
-
-                    if (rangeStart && rangeEnd && t.date >= rangeStart && t.date <= rangeEnd) {
-                        rangeDividend += t.dividendTotal;
-                    }
-                }
-            });
-
-            // 自動清理孤兒收盤價
-            let activeStockNames = Object.keys(stockMap);
-            let hasOrphanClosingPrice = false;
-            for (let stockName in closingPrices) {
-                if (!activeStockNames.includes(stockName) || stockMap[stockName].totalShares <= 0) {
-                    delete closingPrices[stockName];
-                    hasOrphanClosingPrice = true;
-                }
-            }
-            if (hasOrphanClosingPrice) {
-                localStorage.setItem('stock_closing_prices', JSON.stringify(closingPrices));
-            }
-
-            // 渲染歷史明細
-            [...trades].reverse().forEach(t => {
-                const isBuy = t.type === 'BUY';
-                const isSell = t.type === 'SELL';
-                const isDiv = t.type === 'DIVIDEND';
-                const displayShares = t.inputShares !== undefined ? t.inputShares : (t.shares / 1000);
-                
-                let badgeColor = 'bg-blue-100 text-blue-600';
-                let typeText = '買進';
-                let desc = `${displayShares} 張 @ $${t.price}`;
-                
-                if (isSell) {
-                    badgeColor = 'bg-red-100 text-red-600';
-                    typeText = '賣出';
-                } else if (isDiv) {
-                    badgeColor = 'bg-yellow-100 text-yellow-700';
-                    typeText = '現金股利';
-                    desc = `配息 $${t.price}/股 (共 ${displayShares} 張)，總計: +$${Math.round(t.dividendTotal).toLocaleString()}`;
-                }
-
-                const div = document.createElement('div');
-                div.className = `p-3 rounded-lg border text-sm flex justify-between items-center shadow-sm ${isDiv ? 'bg-yellow-50/50 border-yellow-100' : (isBuy ? 'bg-blue-50/50 border-blue-100' : 'bg-red-50/50 border-red-100')}`;
-                div.innerHTML = `
-                    <div>
-                        <div class="flex items-center space-x-2 mb-1">
-                            <span class="font-bold text-gray-800">${t.stockName}</span> 
-                            <span class="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">${t.assetType === 'ETF' ? 'ETF' : '股票'}</span>
-                        </div>
-                        <div class="text-gray-600 text-xs flex items-center space-x-2">
-                            <span class="${badgeColor} font-semibold px-1.5 py-0.5 rounded">${typeText}</span>
-                            <span>${t.date}</span>
-                        </div>
-                        <div class="text-gray-700 mt-1 text-xs font-medium">
-                            ${desc}
-                        </div>
-                    </div>
-                    <button onclick="deleteTrade(${t.id})" class="text-gray-400 hover:text-red-600 px-3 py-2 bg-white rounded-md border border-gray-200 shadow-sm transition text-xs">刪除</button>
-                `;
-                tradeListEl.appendChild(div);
-            });
-
-            let grandTotalMarketValue = 0; 
-            let grandTotalGrossCost = 0; 
-            let grandTotalNetCost = 0;   
-            holdingSummaryEl.innerHTML = '';
-
-            for (let [name, data] of Object.entries(stockMap)) {
-                if (data.totalShares > 0) {
-                    let totalRemainingCost = 0;
-                    data.buyRecords.forEach(batch => {
-                        totalRemainingCost += (batch.shares * batch.price) + batch.fee;
-                    });
-
-                    let netCost = totalRemainingCost - data.totalDividend;
-                    
-                    grandTotalGrossCost += totalRemainingCost; 
-                    grandTotalNetCost += Math.max(0, netCost); 
-
-                    let avgPrice = totalRemainingCost / data.totalShares;
-                    let netAvgPrice = Math.max(0, netCost) / data.totalShares;
-                    let totalSheets = data.totalShares / 1000;
-
-                    let currentClosePrice = closingPrices[name] || '';
-                    let marketValue = currentClosePrice !== '' ? data.totalShares * currentClosePrice : 0;
-                    
-                    if (currentClosePrice !== '') {
-                        grandTotalMarketValue += marketValue;
-                    }
-
-                    let grossPnl = currentClosePrice !== '' ? marketValue - totalRemainingCost : 0;
-
-                    let divHistoryHTML = '';
-                    if (data.dividendHistory.length > 0) {
-                        let divItems = data.dividendHistory.map(d => `
-                            <div class="flex justify-between text-xs text-gray-600 pl-2 border-l-2 border-yellow-300 mt-1">
-                                <span>${d.date} (${d.shares}張 @ $${d.perShare})</span>
-                                <span class="font-semibold text-yellow-700">+$${Math.round(d.amount).toLocaleString()}</span>
-                            </div>
-                        `).join('');
-
-                        divHistoryHTML = `
-                            <div class="mt-2 pt-2 border-t border-gray-100 border-dashed">
-                                <p class="text-xs text-gray-500 mb-1">現金股利配息明細:</p>
-                                ${divItems}
-                                <div class="flex justify-between text-xs text-yellow-800 font-bold mt-1.5 pt-1 border-t border-yellow-100">
-                                    <span>累計配息總額:</span>
-                                    <span>+$${Math.round(data.totalDividend).toLocaleString()}</span>
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    let card = document.createElement('div');
-                    card.className = 'p-4 rounded-xl bg-gray-50 border border-gray-200 text-sm space-y-2 shadow-sm';
-                    card.innerHTML = `
-                        <div class="flex justify-between items-center border-b pb-2 mb-2">
-                            <span class="font-bold text-base text-gray-800">${name}</span>
-                            <span class="text-blue-700 font-semibold bg-blue-100 px-2 py-1 rounded">持有: ${totalSheets} 張</span>
-                        </div>
-                        <div class="flex justify-between items-center text-gray-700 text-xs">
-                            <span>今日收盤價:</span>
-                            <input type="number" step="0.01" value="${currentClosePrice}" placeholder="輸入收盤價" onchange="updateClosingPrice('${name}', this.value)" class="w-24 border rounded p-1 text-right text-xs bg-white">
-                        </div>
-                        <div class="flex justify-between text-gray-700 text-xs">
-                            <span>原始庫存總成本 (不含配息折抵):</span>
-                            <span class="font-semibold">$${Math.round(totalRemainingCost).toLocaleString()}</span>
-                        </div>
-                        <div class="flex justify-between text-gray-900 font-bold text-sm bg-blue-50/50 p-1.5 rounded">
-                            <span>剩餘股票淨成本 (扣除配息後):</span>
-                            <span class="text-blue-600">$${Math.round(netCost).toLocaleString()}</span>
-                        </div>
-                        <div class="flex justify-between text-gray-500 text-xs">
-                            <span>淨均價 (含配息折抵):</span>
-                            <span>$${netAvgPrice.toFixed(2)} /股</span>
-                        </div>
-                        ${currentClosePrice !== '' ? `
-                        <div class="flex justify-between text-xs text-gray-600 pt-1 border-t border-gray-200">
-                            <span class="font-semibold text-blue-700">現有股票總市值: $${Math.round(marketValue).toLocaleString()}</span>
-                        </div>
-                        <div class="flex justify-between text-xs text-gray-600">
-                            <span>市值減原始成本 (浮動損益):</span>
-                            <span class="font-bold ${grossPnl >= 0 ? 'text-red-500' : 'text-green-600'}">$${Math.round(grossPnl).toLocaleString()}</span>
-                        </div>
-                        ` : ''}
-                        ${divHistoryHTML}
-                    `;
-                    holdingSummaryEl.appendChild(card);
-                }
-            }
-
-            // 更新總覽數值
-            let totalReturnAmount = totalRealizedPnl + totalDividendAll;
-            let totalRoi = grandTotalNetCost > 0 ? (totalReturnAmount / grandTotalNetCost) * 100 : 0;
-
-            document.getElementById('totalRealizedPnl').innerText = `$${Math.round(totalRealizedPnl).toLocaleString()}`;
-            document.getElementById('totalRealizedPnl').className = `text-lg font-bold ${totalRealizedPnl >= 0 ? 'text-red-500' : 'text-green-600'}`;
-            document.getElementById('totalDividend').innerText = `$${Math.round(totalDividendAll).toLocaleString()}`;
-            document.getElementById('totalMarketValueAll').innerText = `$${Math.round(grandTotalMarketValue).toLocaleString()}`;
-            document.getElementById('totalGrossCostAll').innerText = `$${Math.round(grandTotalGrossCost).toLocaleString()}`;
-            document.getElementById('totalNetCostAll').innerText = `$${Math.round(grandTotalNetCost).toLocaleString()}`;
-            
-            const roiEl = document.getElementById('totalRoi');
-            roiEl.innerText = `${totalRoi.toFixed(2)}%`;
-            roiEl.className = `text-lg font-bold ${totalRoi >= 0 ? 'text-red-500' : 'text-green-600'}`;
-
-            // 更新區間統計數值
-            let rangeTotalAmount = rangeRealizedPnl + rangeDividend;
-            document.getElementById('rangePnl').innerText = `$${Math.round(rangeRealizedPnl).toLocaleString()}`;
-            document.getElementById('rangeDividend').innerText = `$${Math.round(rangeDividend).toLocaleString()}`;
-            document.getElementById('rangeTotal').innerText = `$${Math.round(rangeTotalAmount).toLocaleString()}`;
-            document.getElementById('rangeTotal').className = `text-sm font-bold ${rangeTotalAmount >= 0 ? 'text-emerald-600' : 'text-green-600'}`;
-
-            if (holdingSummaryEl.innerHTML === '') {
-                holdingSummaryEl.innerHTML = '<p class="text-sm text-gray-400 text-center py-6 bg-gray-50 rounded-lg border border-dashed">目前沒有持股或配息資料</p>';
-            }
+        function updateClosingPrice(name, price) {
+            closingPrices[name] = parseFloat(price) || 0;
+            saveData();
         }
 
         function exportData() {
-    try {
-        // 強制重新從 localStorage 讀取最新狀態，避免資料不同步
-        const currentTrades = JSON.parse(localStorage.getItem('stock_trades_v16')) || [];
-        const currentClosingPrices = JSON.parse(localStorage.getItem('stock_closing_prices')) || {};
-        
-        const exportObj = { trades: currentTrades, closingPrices: currentClosingPrices };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
-        
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `stock_backup_v16_${new Date().toISOString().slice(0,10)}.json`);
-        
-        // 強制加入 body 再觸發，解決部分手機瀏覽器不回應的問題
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-        
-        alert("備份檔案已產生並開始下載！");
-    } catch (err) {
-        console.error("備份失敗:", err);
-        alert("備份失敗，請檢查瀏覽器權限或 LocalStorage 狀態。");
-    }
-}
-
-        function importData(event) {
-            const fileReader = new FileReader();
-            if (event.target.files[0]) {
-                fileReader.readAsText(event.target.files[0], "UTF-8");
-                fileReader.onload = function (e) {
-                    try {
-                        let imported = JSON.parse(e.target.result);
-                        if (Array.isArray(imported)) {
-                            trades = imported;
-                        } else if (imported.trades) {
-                            trades = imported.trades;
-                            closingPrices = imported.closingPrices || {};
-                        }
-                        saveData();
-                        alert('資料還原成功！');
-                    } catch (error) {
-                        alert('檔案解析失敗。');
-                    }
-                }
-            }
+            const blob = new Blob([JSON.stringify({trades, closingPrices})], {type: "application/json"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
         }
 
+        function importData(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const data = JSON.parse(ev.target.result);
+                trades = data.trades;
+                closingPrices = data.closingPrices;
+                saveData();
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        function render() {
+            const holdingSummary = document.getElementById('holdingSummary');
+            const tradeList = document.getElementById('tradeList');
+            holdingSummary.innerHTML = '';
+            tradeList.innerHTML = '';
+            
+            let stockMap = {};
+            trades.forEach(t => {
+                if (!stockMap[t.stockName]) stockMap[t.stockName] = { totalShares: 0, buyRecords: [], totalDividend: 0, dividendHistory: [] };
+                let s = stockMap[t.stockName];
+                if (t.type === 'BUY') {
+                    s.totalShares += t.shares;
+                    s.buyRecords.push({ shares: t.shares, price: t.price, fee: t.fee });
+                } else if (t.type === 'SELL') {
+                    s.totalShares -= t.shares;
+                    s.buyRecords.shift(); // 簡易 FIFO
+                } else if (t.type === 'DIVIDEND') {
+                    s.totalDividend += t.dividendTotal;
+                    s.dividendHistory.push({ date: t.date, amount: t.dividendTotal, perShare: t.price, shares: t.inputShares });
+                }
+            });
+
+            // 渲染持股 (僅顯示 totalShares > 0)
+            for (let [name, data] of Object.entries(stockMap)) {
+                if (data.totalShares > 0) {
+                    let divItems = data.dividendHistory.map(d => `<div class="flex justify-between text-xs text-gray-600"><span>${d.date} (${d.shares}張)</span><span>+$${Math.round(d.amount)}</span></div>`).join('');
+                    let divHTML = data.dividendHistory.length > 0 ? `<div class="mt-2 pt-2 border-t text-xs">配息明細:${divItems}<div class="font-bold text-yellow-700">累計: +$${Math.round(data.totalDividend)}</div></div>` : '';
+                    
+                    let card = document.createElement('div');
+                    card.className = 'p-4 rounded-xl bg-white border border-gray-200 text-sm shadow-sm';
+                    card.innerHTML = `<div class="font-bold text-base border-b pb-2 mb-2">${name} (持有: ${data.totalShares/1000} 張)</div>
+                                      <div class="flex justify-between">收盤價:<input type="number" value="${closingPrices[name]||''}" onchange="updateClosingPrice('${name}', this.value)" class="w-20 border text-right"></div>
+                                      ${divHTML}`;
+                    holdingSummary.appendChild(card);
+                }
+            }
+            // 簡化歷史渲染...
+        }
         render();
     </script>
 </body>
